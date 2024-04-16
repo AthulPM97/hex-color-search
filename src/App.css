@@ -1,0 +1,25 @@
+.root-container {
+    display: flex;
+    flex-direction: column;
+    padding: 10px 10px;
+}
+.root-container > h1 {
+    font-size: large;
+}
+
+.root-container > *:not(:last-child) {
+    margin-bottom: 10px;
+  }
+
+.input-container {
+    display: flex;
+    flex-direction: column;
+    width: 20%;
+}
+
+table {
+    width: 100%;
+}
+th {
+    text-align: left;
+}
