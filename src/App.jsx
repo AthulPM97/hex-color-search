@@ -1,8 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import "./App.css";
 import axios from "axios";
 import { batchOperation } from "./util/batchOps";
 import { hexToRgb, rgbToHsl } from "./util/hexConverters";
+import sortByColorSimilarity from "./util/colorSearch";
+import UnfilteredTable from "./components/UnfilteredTable";
+import FilteredTable from "./components/FilteredTable";
 
 const url =
   "https://raw.githubusercontent.com/NishantChandla/color-test-resources/main/xkcd-colors.json";
@@ -10,6 +13,10 @@ const url =
 function App() {
   const [colors, setColors] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedColor, setSelectedColor] = useState(null);
+  const [filteredColors, setFilteredColors] = useState([]);
+
+  const searchRef = useRef(null);
 
   useEffect(() => {
     // Fetch data
@@ -45,44 +52,68 @@ function App() {
     });
   }, []);
 
+  // search submit handler
+  const submitHandler = (e) => {
+    if (e.key == "Enter") {
+      const input = searchRef.current.value.trim();
+      // if empty input reset list to show all colors
+      if (input == "") {
+        setSelectedColor(null);
+        return;
+      }
+
+      // Regular expressions for hex and rgb formats
+      const hexRegex = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i;
+      const rgbRegex = /^rgb\((\d{1,3}),(\d{1,3}),(\d{1,3})\)$/;
+
+      // Check if input matches hex format
+      const hexMatch = input.match(hexRegex);
+      if (hexMatch) {
+        const rgb = hexToRgb(input); // Convert hex to RGB
+        const sortedColorsArray = sortByColorSimilarity(rgb, [...colors]);
+        setFilteredColors(sortedColorsArray);
+        setSelectedColor(input);
+        return;
+      }
+
+      // Check if input matches rgb format
+      const rgbMatch = input.match(rgbRegex);
+      if (rgbMatch) {
+        const rgb = {
+          r: parseInt(rgbMatch[1]),
+          g: parseInt(rgbMatch[2]),
+          b: parseInt(rgbMatch[3]),
+        };
+        const sortedColorsArray = sortByColorSimilarity(rgb, [...colors]);
+        setFilteredColors(sortedColorsArray);
+        setSelectedColor(input);
+        return;
+      }
+
+      // If input does not match any valid format
+      alert("Invalid input format");
+    }
+  };
+
   return (
     <div className="root-container">
       <h1>Colour Searcher</h1>
       <div className="input-container">
         <span>Colour</span>
-        <input type="text" placeholder="Enter Colour" />
+        <input
+          type="text"
+          placeholder="Enter Colour"
+          ref={searchRef}
+          onKeyDown={submitHandler}
+          disabled={isLoading}
+        />
       </div>
       {!isLoading && (
         <div className="table-container">
-          <span>All colours</span>
-          <table>
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Name</th>
-                <th>Hex</th>
-                <th>RGB</th>
-                <th>HSL</th>
-              </tr>
-            </thead>
-            <tbody>
-              {colors.map((color, idx) => {
-                return (
-                  <tr key={idx}>
-                    <td style={{ width: "5%", background: color.hex }}></td>
-                    <td style={{ width: "25%" }}>{color.color}</td>
-                    <td style={{ width: "15%" }}>{color.hex}</td>
-                    <td style={{ width: "15%" }}>
-                      {Object.values(color.rgb).join(",")}
-                    </td>
-                    <td style={{ width: "15%" }}>
-                      {Object.values(color.hsl).join(",")}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          {!selectedColor && <span>All colours</span>}
+          {!selectedColor && <UnfilteredTable colors={colors} />}
+          {selectedColor && <span>Results for {searchRef.current.value}</span>}
+          {selectedColor && <FilteredTable filteredColors={filteredColors} />}
         </div>
       )}
       {isLoading && <div>Loading...</div>}

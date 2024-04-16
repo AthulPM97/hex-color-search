@@ -18,10 +18,12 @@ function calculateColorDifference(color1, color2) {
  * @param {object[]} colors - An array of color objects to be sorted.
  * @returns {object[]} The sorted array of colors.
  */
-function sortByColorSimilarity(inputColor, colors) {
-  return colors.sort((color1, color2) => {
+export default function sortByColorSimilarity(inputColor, colors) {
+  const sortedColors = colors.sort((color1, color2) => {
     const difference1 = calculateColorDifference(inputColor, color1.rgb);
     const difference2 = calculateColorDifference(inputColor, color2.rgb);
     return difference1 - difference2; // Ascending order
   });
+
+  return sortedColors.slice(0, 100); // Return only the first 100 elements
 }
